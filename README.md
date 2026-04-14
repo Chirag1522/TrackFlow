@@ -1,70 +1,127 @@
-# TrackFlow Setup Guide
+# TrackFlow Setup
 
-This README contains setup instructions only.
+## Project Overview
+
+TrackFlow is a multi-tenant courier tracking SaaS:
+
+- Backend: Express + Prisma + PostgreSQL
+- Frontend: React + Vite
+- Optional infra: Redis (cache + queues)
 
 ## Prerequisites
 
+Install these first:
+
 - Node.js 18+
-- PostgreSQL database (Neon or local)
-- Cloudinary account (for proof-of-delivery uploads)
+- npm 9+
+- PostgreSQL (local or hosted)
+- Cloudinary account (required for proof image uploads)
+
+Optional but recommended:
+
+- Redis (for cache and BullMQ email queue)
 
 ## 1) Clone Repository
+
+### macOS/Linux
 
 ```bash
 git clone https://github.com/Chirag1522/TrackFlow.git
 cd courier-saas
 ```
 
+### Windows PowerShell
+
+```powershell
+git clone https://github.com/Chirag1522/TrackFlow.git
+Set-Location courier-saas
+```
+
 ## 2) Install Dependencies
+
+From project root:
 
 ```bash
 npm install
 ```
 
-## 3) Configure Backend Environment
+## 3) Configure Environment Files
 
-Copy and edit backend env:
+Create env files from examples.
+
+### macOS/Linux
 
 ```bash
 cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
 ```
 
-Set at least these values in `apps/api/.env`:
+### Windows PowerShell
+
+```powershell
+Copy-Item apps/api/.env.example apps/api/.env
+Copy-Item apps/web/.env.example apps/web/.env
+```
+
+## 4) Configure Backend Env
+
+Edit apps/api/.env and set required values:
 
 ```env
-DATABASE_URL="postgresql://user:pass@host:5432/dbname"
-JWT_SECRET="change-this-secret-min-16-chars"
-JWT_REFRESH_SECRET="change-this-refresh-secret-min-16-chars"
+DATABASE_URL="postgresql://user:password@localhost:5432/courier_saas"
+JWT_SECRET="change-this-to-a-random-string-min-32-chars"
+JWT_REFRESH_SECRET="change-this-refresh-secret-min-32-chars"
+JWT_EXPIRES_IN="15m"
+JWT_REFRESH_EXPIRES_IN="7d"
+
 CLOUDINARY_CLOUD_NAME="your-cloudinary-cloud-name"
 CLOUDINARY_API_KEY="your-cloudinary-api-key"
 CLOUDINARY_API_SECRET="your-cloudinary-api-secret"
+
 EMAIL_FROM="noreply@yourdomain.com"
+SMTP_HOST="smtp.gmail.com"
+SMTP_USER="your-email@gmail.com"
+SMTP_PASS="your-app-password"
+
 FRONTEND_URL="http://localhost:5173"
 PORT=5000
 NODE_ENV=development
 ```
 
-Optional performance envs already supported:
+Optional Redis/Performance settings:
 
-- Redis: `REDIS_ENABLED`, `REDIS_URL` (or host/port)
-- Cache: `CACHE_ENABLED`, TTL variables
-- Queue: `QUEUES_ENABLED`, `EMAIL_QUEUE_CONCURRENCY`
+```env
+REDIS_ENABLED=true
+REDIS_URL=""
+REDIS_HOST="127.0.0.1"
+REDIS_PORT=6379
+REDIS_PASSWORD=""
+REDIS_DB=0
 
-## 4) Configure Frontend Environment
-
-Copy and edit frontend env:
-
-```bash
-cp apps/web/.env.example apps/web/.env
+CACHE_ENABLED=true
+QUEUES_ENABLED=true
+EMAIL_QUEUE_CONCURRENCY=4
 ```
 
-Set API URL in `apps/web/.env`:
+If you do not have Redis locally, set:
+
+```env
+REDIS_ENABLED=false
+CACHE_ENABLED=false
+QUEUES_ENABLED=false
+```
+
+## 5) Configure Frontend Env
+
+Edit apps/web/.env:
 
 ```env
 VITE_API_URL=http://localhost:5000/api
 ```
 
-## 5) Database Setup
+## 6) Database Setup
+
+Run Prisma migration, client generation, and seed data.
 
 ```bash
 cd apps/api
@@ -74,208 +131,114 @@ node prisma/seed.js
 cd ../..
 ```
 
-## 6) Run Development Servers
+## 7) Run the Apps
 
-Terminal 1 (API):
+Use two terminals.
+
+### Terminal 1: Backend API
 
 ```bash
 cd apps/api
 npm run dev
 ```
 
-Terminal 2 (Web):
+Expected:
+
+- API starts on http://localhost:5000
+- Health endpoint: http://localhost:5000/health
+
+### Terminal 2: Frontend Web
 
 ```bash
 cd apps/web
 npm run dev
 ```
 
-## 7) Local URLs
+Expected:
 
-- API: http://localhost:5000
-- Web: http://localhost:5173
+- Frontend starts on http://localhost:5173
+- If 5173 is busy, Vite may pick 5174
 
-## Workspace Scripts
+## 8) Quick Login Credentials (Seed Data)
 
-From repository root:
+Use these after running seed:
+
+- Admin: admin@democourier.com / admin123
+- Agent: agent@democourier.com / agent123
+
+## 9) Verify Everything Quickly
+
+1. Open http://localhost:5000/health and confirm status ok.
+2. Open frontend URL from Vite terminal output.
+3. Login as admin and check dashboard loads.
+4. Open public tracking page and test a tracking ID.
+
+## 10) Useful Root Scripts
+
+From project root:
 
 ```bash
 npm run dev:api
 npm run dev:web
 npm run build:web
-```# CourierSaaS — Multi-Tenant Courier Tracking Platform
-
-A full-featured SaaS platform for courier companies to manage shipments, and for customers to track packages in real-time.
-
-## Tech Stack
-- **Backend:** Node.js + Express, Prisma ORM, PostgreSQL (Neon.tech)
-- **Frontend:** React + Vite, Tailwind CSS, Zustand, React Router v6
-- **Advanced Features:** QR Code generation/scanning + Mobile-first PWA
-
----
-
-## Local Setup
-
-### Prerequisites
-- Node.js 18+
-- PostgreSQL (or a Neon.tech account)
-- Cloudinary account (for proof-of-delivery uploads)
-
-### 1. Clone and install
-```bash
-git clone https://github.com/Chirag1522/TrackFlow.git
-cd courier-saas
-npm install
+npm run migrate
 ```
 
-### 2. Configure backend environment
-```bash
-cp apps/api/.env.example apps/api/.env
-```
-Edit `apps/api/.env`:
-```
-DATABASE_URL="postgresql://user:pass@host/dbname"
-JWT_SECRET="change-this-secret-min-16-chars"
-JWT_REFRESH_SECRET="change-this-refresh-secret"
-CLOUDINARY_CLOUD_NAME="your-cloud-name"
-CLOUDINARY_API_KEY="your-api-key"
-CLOUDINARY_API_SECRET="your-api-secret"
-EMAIL_FROM="noreply@yourdomain.com"
-FRONTEND_URL="http://localhost:5173"
-PORT=5000
-NODE_ENV=development
-```
+## 11) Common Local Issues and Fixes
 
-### 3. Configure frontend environment
-```bash
-cp apps/web/.env.example apps/web/.env
-```
-Edit `apps/web/.env`:
-```
-VITE_API_URL=http://localhost:5000/api
-```
+### Problem: API does not start
 
-### 4. Run database migrations
+- Ensure apps/api/.env exists and has valid required values.
+- Validate DATABASE_URL points to a reachable database.
+- Run:
+
 ```bash
 cd apps/api
-npx prisma migrate dev --name init
+npx prisma generate
+npx prisma migrate dev
+```
+
+### Problem: Frontend shows network error
+
+- Confirm API is running on port 5000.
+- Confirm apps/web/.env has correct VITE_API_URL.
+- Restart frontend after env changes.
+
+### Problem: Prisma errors about schema/migrations
+
+Run in apps/api:
+
+```bash
+npx prisma migrate dev
 npx prisma generate
 ```
 
-### 5. Seed demo data
-```bash
-node prisma/seed.js
+### Problem: Redis connection warnings
+
+If Redis is not installed locally, disable Redis features in apps/api/.env:
+
+```env
+REDIS_ENABLED=false
+CACHE_ENABLED=false
+QUEUES_ENABLED=false
 ```
 
-### 6. Start development servers
-```bash
-# Terminal 1 - Backend
-cd apps/api && npm run dev
+## 12) API Testing (Postman)
 
-# Terminal 2 - Frontend
-cd apps/web && npm run dev
-```
+Use collection:
 
-- Backend: http://localhost:5000
-- Frontend: http://localhost:5173
+- docs/postman/CourierSaaS.postman_collection.json
 
----
+Recommended order:
 
-## Demo Login Credentials
+1. Login endpoint
+2. Protected admin endpoints
+3. Public tracking endpoint
 
-| Role        | Email                      | Password       |
-|-------------|---------------------------|----------------|
-| Admin       | admin@democourier.com     | admin123       |
-| Agent       | agent@democourier.com     | agent123       |
+## 13) Local URLs Summary
+
+- API: http://localhost:5000
+- API Health: http://localhost:5000/health
+- Frontend: http://localhost:5173 (or 5174 if port in use)
 
 ---
-
-## Environment Variables
-
-| Variable                | Required | Description                        |
-|-------------------------|----------|------------------------------------|
-| `DATABASE_URL`          | ✅       | PostgreSQL connection string        |
-| `JWT_SECRET`            | ✅       | Access token secret (min 16 chars) |
-| `JWT_REFRESH_SECRET`    | ✅       | Refresh token secret               |
-| `JWT_EXPIRES_IN`        | ✅       | Access token TTL (default: 15m)    |
-| `JWT_REFRESH_EXPIRES_IN`| ✅       | Refresh token TTL (default: 7d)    |
-| `CLOUDINARY_CLOUD_NAME` | ✅       | Cloudinary cloud name              |
-| `CLOUDINARY_API_KEY`    | ✅       | Cloudinary API key                 |
-| `CLOUDINARY_API_SECRET` | ✅       | Cloudinary API secret              |
-| `EMAIL_FROM`            | ✅       | Sender email address               |
-| `FRONTEND_URL`          | ✅       | Frontend URL (for CORS + emails)   |
-| `PORT`                  | ❌       | API port (default: 5000)           |
-| `DISABLE_RATE_LIMIT`    | ❌       | Set `true` only for local debugging |
-
----
-
-## Deployment
-
-### Database — Neon.tech
-1. Create project at https://neon.tech
-2. Copy connection string to `DATABASE_URL`
-3. Run `npx prisma migrate deploy`
-
-### Backend — Render
-1. Connect GitHub repo to Render
-2. Set root directory: `apps/api`
-3. Add all env vars from above
-4. Set start command: `npm start`
-5. Add release command: `npx prisma migrate deploy`
-
-### Frontend — Vercel
-1. Connect GitHub repo to Vercel
-2. Set root directory: `apps/web`
-3. Set `VITE_API_URL` to `https://trackflow-lxk9.onrender.com/api`
-4. Deploy
-
-### Live Deployment
-- Frontend: https://track-flow-web.vercel.app/
-- Backend API: https://trackflow-lxk9.onrender.com
-
----
-
-## API Documentation
-
-See `ARCHITECTURE.md` for full API reference.
-Postman collection: `docs/postman/CourierSaaS.postman_collection.json`
-
-### Key endpoints:
-- `POST /api/auth/login` — Login
-- `POST /api/auth/refresh` — Refresh access token
-- `GET /api/track/:tracking_id` — Public shipment tracking (no auth)
-- `POST /api/shipments` — Create shipment (admin)
-- `POST /api/shipments/:id/status` — Update status (agent/admin)
-- `POST /api/shipments/:id/assign-agent` — Assign delivery agent (admin)
-- `GET /api/analytics/summary` — Dashboard stats (admin)
-
----
-
-## Advanced Features Implemented
-
-### 1. QR Code Generation & Scanning
-- Every shipment gets a unique QR code on creation
-- Admin can view QR code in shipment modal
-- Agent scan page uses device camera via `html5-qrcode`
-- Scanning auto-navigates to tracking page
-
-### 2. Mobile-First PWA Agent Interface
-- All agent pages are fully responsive (mobile-first Tailwind)
-- PWA manifest configured with icons and `display: standalone`
-- Service worker via `vite-plugin-pwa` with offline caching
-- Camera access for QR scanning and proof-of-delivery photos
-- "Add to home screen" supported on iOS and Android
-
----
-
-## Submission Checklist
-
-- Git repository link: `https://github.com/Chirag1522/TrackFlow`
-- Setup instructions: included in this `README.md`
-- Architecture overview: `ARCHITECTURE.md`
-- API documentation (Postman): `docs/postman/CourierSaaS.postman_collection.json`
-- Advanced enhancements implemented:
-	- QR code generation and scanning
-	- Mobile-first PWA delivery agent interface
-- Deployed frontend link: `https://track-flow-web.vercel.app/`
-- Deployed backend/API link: `https://trackflow-lxk9.onrender.com`
