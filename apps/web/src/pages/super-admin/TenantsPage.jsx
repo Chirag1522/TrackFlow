@@ -1,10 +1,20 @@
 import { useEffect, useState, useMemo } from 'react';
 import api from '../../api/axios';
 import { Table, Modal, Button, Input, Select, Badge } from '../../components/ui';
-import { Plus, Edit, Trash2, ToggleLeft, ToggleRight, Building2, Activity, Ban, CreditCard } from 'lucide-react';
+import { Plus, Edit, Trash2, ToggleLeft, ToggleRight, Building2, Activity, Ban, CreditCard, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 
-const EMPTY_FORM = { name: '', slug: '', plan_id: '', plan_valid_until: '', status: 'active' };
+const EMPTY_FORM = {
+  name: '',
+  slug: '',
+  plan_id: '',
+  plan_valid_until: '',
+  status: 'active',
+  admin_name: '',
+  admin_email: '',
+  admin_password: '',
+};
+const EMPTY_ADMIN_FORM = { name: '', email: '', password: '' };
 
 export default function TenantsPage() {
   const [tenants, setTenants] = useState([]);
@@ -14,6 +24,10 @@ export default function TenantsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [adminModal, setAdminModal] = useState({ open: false, tenant: null });
+  const [adminForm, setAdminForm] = useState(EMPTY_ADMIN_FORM);
+  const [adminSaving, setAdminSaving] = useState(false);
+  const [adminError, setAdminError] = useState('');
 
   const stats = useMemo(() => {
     const total = tenants.length;
@@ -36,21 +50,75 @@ export default function TenantsPage() {
 
   const openCreate = () => { setForm(EMPTY_FORM); setError(''); setModal({ open: true, tenant: null }); };
   const openEdit = (tenant) => {
-    setForm({ name: tenant.name, slug: tenant.slug, plan_id: tenant.plan_id || '', plan_valid_until: tenant.plan_valid_until ? tenant.plan_valid_until.slice(0, 10) : '', status: tenant.status });
+    setForm({
+      name: tenant.name,
+      slug: tenant.slug,
+      plan_id: tenant.plan_id || '',
+      plan_valid_until: tenant.plan_valid_until ? tenant.plan_valid_until.slice(0, 10) : '',
+      status: tenant.status,
+      admin_name: '',
+      admin_email: '',
+      admin_password: '',
+    });
     setError('');
     setModal({ open: true, tenant });
+  };
+
+  const openCreateAdmin = (tenant) => {
+    setAdminForm(EMPTY_ADMIN_FORM);
+    setAdminError('');
+    setAdminModal({ open: true, tenant });
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true); setError('');
     try {
-      if (modal.tenant) await api.patch(`/tenants/${modal.tenant.id}`, form);
-      else await api.post('/tenants', form);
+      if (modal.tenant) {
+        const payload = {
+          name: form.name,
+          slug: form.slug,
+          plan_id: form.plan_id || null,
+          status: form.status,
+          ...(form.plan_valid_until ? { plan_valid_until: form.plan_valid_until } : {}),
+        };
+        await api.patch(`/tenants/${modal.tenant.id}`, payload);
+      } else {
+        const payload = {
+          name: form.name,
+          slug: form.slug,
+          plan_id: form.plan_id || null,
+          status: form.status,
+          ...(form.plan_valid_until ? { plan_valid_until: form.plan_valid_until } : {}),
+          admin_name: form.admin_name,
+          admin_email: form.admin_email.trim().toLowerCase(),
+          admin_password: form.admin_password,
+        };
+        await api.post('/tenants', payload);
+      }
       setModal({ open: false, tenant: null });
       load();
     } catch (err) { setError(err.response?.data?.error || 'Failed to save'); }
     finally { setSaving(false); }
+  };
+
+  const handleCreateAdmin = async (e) => {
+    e.preventDefault();
+    setAdminSaving(true);
+    setAdminError('');
+    try {
+      await api.post(`/tenants/${adminModal.tenant.id}/admins`, {
+        name: adminForm.name,
+        email: adminForm.email.trim().toLowerCase(),
+        password: adminForm.password,
+      });
+      setAdminModal({ open: false, tenant: null });
+      load();
+    } catch (err) {
+      setAdminError(err.response?.data?.error || 'Failed to create admin');
+    } finally {
+      setAdminSaving(false);
+    }
   };
 
   const toggleStatus = async (tenant) => {
@@ -75,6 +143,9 @@ export default function TenantsPage() {
     {
       key: 'actions', label: '', render: (r) => (
         <div className="flex gap-2">
+          <button onClick={() => openCreateAdmin(r)} className="text-blue-600 hover:text-blue-700" title="Add tenant admin">
+            <UserPlus size={15} />
+          </button>
           <button onClick={() => openEdit(r)} className="text-sm font-medium" style={{ color: '#F74B25' }}><Edit size={15} /></button>
           <button onClick={() => toggleStatus(r)} className="text-gray-500 hover:text-gray-700">
             {r.status === 'active' ? <ToggleRight size={15} className="text-green-600" /> : <ToggleLeft size={15} />}
@@ -146,6 +217,16 @@ export default function TenantsPage() {
         <form onSubmit={handleSave} className="space-y-4">
           <Input label="Company Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
           <Input label="Slug (URL-safe)" value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') }))} placeholder="my-courier-co" required />
+          {!modal.tenant && (
+            <>
+              <div className="rounded-lg border border-orange-100 bg-orange-50 px-3 py-2 text-xs text-orange-800">
+                Super admin onboarding creates the tenant and its first admin account together.
+              </div>
+              <Input label="Initial Admin Name" value={form.admin_name} onChange={e => setForm(f => ({ ...f, admin_name: e.target.value }))} required />
+              <Input label="Initial Admin Email" type="email" value={form.admin_email} onChange={e => setForm(f => ({ ...f, admin_email: e.target.value }))} required />
+              <Input label="Initial Admin Password" type="password" minLength={6} value={form.admin_password} onChange={e => setForm(f => ({ ...f, admin_password: e.target.value }))} required />
+            </>
+          )}
           <Select label="Subscription Plan" value={form.plan_id} onChange={e => setForm(f => ({ ...f, plan_id: e.target.value }))}>
             <option value="">— No plan —</option>
             {plans.map(p => <option key={p.id} value={p.id}>{p.name} (${p.price}/mo)</option>)}
@@ -159,6 +240,23 @@ export default function TenantsPage() {
           <div className="flex gap-3 pt-2">
             <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
             <Button type="button" variant="secondary" onClick={() => setModal({ open: false, tenant: null })}>Cancel</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={adminModal.open}
+        onClose={() => setAdminModal({ open: false, tenant: null })}
+        title={`Add Admin${adminModal.tenant ? ` — ${adminModal.tenant.name}` : ''}`}
+      >
+        <form onSubmit={handleCreateAdmin} className="space-y-4">
+          <Input label="Admin Name" value={adminForm.name} onChange={e => setAdminForm(f => ({ ...f, name: e.target.value }))} required />
+          <Input label="Admin Email" type="email" value={adminForm.email} onChange={e => setAdminForm(f => ({ ...f, email: e.target.value }))} required />
+          <Input label="Admin Password" type="password" minLength={6} value={adminForm.password} onChange={e => setAdminForm(f => ({ ...f, password: e.target.value }))} required />
+          {adminError && <p className="text-sm text-red-600">{adminError}</p>}
+          <div className="flex gap-3 pt-2">
+            <Button type="submit" disabled={adminSaving}>{adminSaving ? 'Creating…' : 'Create Admin'}</Button>
+            <Button type="button" variant="secondary" onClick={() => setAdminModal({ open: false, tenant: null })}>Cancel</Button>
           </div>
         </form>
       </Modal>

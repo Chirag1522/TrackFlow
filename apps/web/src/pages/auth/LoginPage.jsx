@@ -17,7 +17,16 @@ export default function LoginPage() {
   const onSubmit = async (data) => {
     setServerError('');
     try {
-      const res = await api.post('/auth/login', data);
+      const payload = {
+        ...data,
+        ...(data.tenant_slug?.trim() ? { tenant_slug: data.tenant_slug.trim().toLowerCase() } : {}),
+      };
+
+      if (!payload.tenant_slug) {
+        delete payload.tenant_slug;
+      }
+
+      const res = await api.post('/auth/login', payload);
       login(res.data.user, res.data.accessToken, res.data.refreshToken);
       navigate(ROLE_REDIRECTS[res.data.user.role] || '/');
     } catch (err) {
@@ -85,6 +94,25 @@ export default function LoginPage() {
               </button>
             </div>
             {errors.password && <p className="text-xs text-red-400 mt-2 font-medium">{errors.password.message}</p>}
+          </div>
+
+          {/* Tenant Slug Field */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2.5">Tenant slug (optional)</label>
+            <input
+              type="text"
+              className="w-full px-4 py-3 border text-gray-900 placeholder-gray-500 rounded-xl focus:outline-none focus:ring-2 transition"
+              style={{ backgroundColor: '#F6F6F6', borderColor: '#F74B25', borderWidth: '1px' }}
+              placeholder="demo-courier"
+              {...register('tenant_slug', {
+                pattern: {
+                  value: /^[a-z0-9-]+$/,
+                  message: 'Use lowercase letters, numbers, and hyphens only',
+                },
+              })}
+            />
+            <p className="mt-2 text-xs text-gray-500">Required when the same email exists in multiple tenants.</p>
+            {errors.tenant_slug && <p className="text-xs text-red-400 mt-2 font-medium">{errors.tenant_slug.message}</p>}
           </div>
 
           {/* Error Message */}
