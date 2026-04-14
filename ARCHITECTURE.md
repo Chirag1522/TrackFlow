@@ -187,9 +187,6 @@ Mounted route prefixes are defined in `apps/api/index.js`.
 | POST | `/api/plans` | super_admin | Create subscription plan |
 | PATCH | `/api/plans/:id` | super_admin | Update subscription plan |
 
-### GPS Module Note
-
-There is a GPS routes module in `apps/api/src/modules/gps/gps.routes.js`, but it is not currently mounted in `apps/api/index.js`.
 
 ## Redis and Queue Usage
 
