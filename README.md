@@ -1,4 +1,109 @@
-# CourierSaaS — Multi-Tenant Courier Tracking Platform
+# TrackFlow Setup Guide
+
+This README contains setup instructions only.
+
+## Prerequisites
+
+- Node.js 18+
+- PostgreSQL database (Neon or local)
+- Cloudinary account (for proof-of-delivery uploads)
+
+## 1) Clone Repository
+
+```bash
+git clone https://github.com/Chirag1522/TrackFlow.git
+cd courier-saas
+```
+
+## 2) Install Dependencies
+
+```bash
+npm install
+```
+
+## 3) Configure Backend Environment
+
+Copy and edit backend env:
+
+```bash
+cp apps/api/.env.example apps/api/.env
+```
+
+Set at least these values in `apps/api/.env`:
+
+```env
+DATABASE_URL="postgresql://user:pass@host:5432/dbname"
+JWT_SECRET="change-this-secret-min-16-chars"
+JWT_REFRESH_SECRET="change-this-refresh-secret-min-16-chars"
+CLOUDINARY_CLOUD_NAME="your-cloudinary-cloud-name"
+CLOUDINARY_API_KEY="your-cloudinary-api-key"
+CLOUDINARY_API_SECRET="your-cloudinary-api-secret"
+EMAIL_FROM="noreply@yourdomain.com"
+FRONTEND_URL="http://localhost:5173"
+PORT=5000
+NODE_ENV=development
+```
+
+Optional performance envs already supported:
+
+- Redis: `REDIS_ENABLED`, `REDIS_URL` (or host/port)
+- Cache: `CACHE_ENABLED`, TTL variables
+- Queue: `QUEUES_ENABLED`, `EMAIL_QUEUE_CONCURRENCY`
+
+## 4) Configure Frontend Environment
+
+Copy and edit frontend env:
+
+```bash
+cp apps/web/.env.example apps/web/.env
+```
+
+Set API URL in `apps/web/.env`:
+
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+## 5) Database Setup
+
+```bash
+cd apps/api
+npx prisma migrate dev --name init
+npx prisma generate
+node prisma/seed.js
+cd ../..
+```
+
+## 6) Run Development Servers
+
+Terminal 1 (API):
+
+```bash
+cd apps/api
+npm run dev
+```
+
+Terminal 2 (Web):
+
+```bash
+cd apps/web
+npm run dev
+```
+
+## 7) Local URLs
+
+- API: http://localhost:5000
+- Web: http://localhost:5173
+
+## Workspace Scripts
+
+From repository root:
+
+```bash
+npm run dev:api
+npm run dev:web
+npm run build:web
+```# CourierSaaS — Multi-Tenant Courier Tracking Platform
 
 A full-featured SaaS platform for courier companies to manage shipments, and for customers to track packages in real-time.
 
