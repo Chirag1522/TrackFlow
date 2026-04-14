@@ -1,0 +1,129 @@
+{
+  "info": {
+    "name": "CourierSaaS API",
+    "description": "Submission collection for multi-tenant courier tracking platform APIs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "shipmentId", "value": "" },
+    { "key": "trackingId", "value": "TRK-20260413-ABC123" },
+    { "key": "agentId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@democourier.com\",\n  \"password\": \"admin123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/refresh",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shipments",
+      "item": [
+        {
+          "name": "Create Shipment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/shipments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sender_info\": {\n    \"name\": \"Alice Sender\",\n    \"email\": \"alice@example.com\",\n    \"phone\": \"9999999999\",\n    \"city\": \"Mumbai\",\n    \"address\": \"Andheri East\"\n  },\n  \"receiver_info\": {\n    \"name\": \"Bob Receiver\",\n    \"email\": \"bob@example.com\",\n    \"phone\": \"8888888888\",\n    \"city\": \"Pune\",\n    \"address\": \"Kothrud\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Shipment By Id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/shipments/{{shipmentId}}"
+          }
+        },
+        {
+          "name": "Assign Agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/shipments/{{shipmentId}}/assign-agent",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent_id\": \"{{agentId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Shipment Status",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/shipments/{{shipmentId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Picked_Up\",\n  \"location\": \"Origin Hub\",\n  \"note\": \"Package picked up\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tracking",
+      "item": [
+        {
+          "name": "Public Track By Tracking Id",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/track/{{trackingId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Summary",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/analytics/summary"
+          }
+        }
+      ]
+    }
+  ]
+}

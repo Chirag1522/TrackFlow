@@ -1,0 +1,185 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SubscriptionPlan {
+  id            String   @id @default(uuid())
+  name          String
+  price         Decimal  @db.Decimal(10, 2)
+  max_shipments Int
+  max_agents    Int
+  created_at    DateTime @default(now())
+  tenants       Tenant[]
+
+  @@map("subscription_plans")
+}
+
+model Tenant {
+  id               String           @id @default(uuid())
+  name             String
+  slug             String           @unique
+  plan_id          String?
+  plan             SubscriptionPlan? @relation(fields: [plan_id], references: [id])
+  plan_valid_until DateTime?
+  status           String           @default("active")
+  created_at       DateTime         @default(now())
+  users            User[]
+  hubs             Hub[]
+  shipments        Shipment[]
+  shipment_events  ShipmentEvent[]
+  notifications    Notification[]
+
+  @@index([plan_id], name: "idx_tenants_plan")
+  @@map("tenants")
+}
+
+model User {
+  id            String          @id @default(uuid())
+  tenant_id     String?
+  tenant        Tenant?         @relation(fields: [tenant_id], references: [id])
+  name          String
+  email         String
+  password_hash String
+  role          String
+  hub_id        String?
+  hub           Hub?            @relation(fields: [hub_id], references: [id])
+  is_active     Boolean         @default(true)
+  created_at    DateTime        @default(now())
+  created_shipments   Shipment[]      @relation("CreatedShipments")
+  assigned_shipments  Shipment[]      @relation("AssignedShipments")
+  shipment_events     ShipmentEvent[]
+  notifications       Notification[]
+
+  @@unique([tenant_id, email], name: "idx_users_email_tenant")
+  @@index([tenant_id], name: "idx_users_tenant")
+  @@index([hub_id], name: "idx_users_hub")
+  @@index([tenant_id, role, is_active, hub_id], name: "idx_users_tenant_role_active_hub")
+  @@map("users")
+}
+
+model Hub {
+  id                   String     @id @default(uuid())
+  tenant_id            String
+  tenant               Tenant     @relation(fields: [tenant_id], references: [id])
+  name                 String
+  city                 String
+  address              String
+  created_at           DateTime   @default(now())
+  users                User[]
+  origin_shipments     Shipment[] @relation("OriginHub")
+  destination_shipments Shipment[] @relation("DestinationHub")
+  current_shipments    Shipment[] @relation("CurrentHub")
+
+  @@index([tenant_id], name: "idx_hubs_tenant")
+  @@map("hubs")
+}
+
+model Shipment {
+  id                  String          @id @default(uuid())
+  tenant_id           String
+  tenant              Tenant          @relation(fields: [tenant_id], references: [id])
+  tracking_id         String
+  created_by          String
+  creator             User            @relation("CreatedShipments", fields: [created_by], references: [id])
+  assigned_agent_id   String?
+  agent               User?           @relation("AssignedShipments", fields: [assigned_agent_id], references: [id])
+  origin_hub_id       String?
+  origin_hub          Hub?            @relation("OriginHub", fields: [origin_hub_id], references: [id])
+  destination_hub_id  String?
+  destination_hub     Hub?            @relation("DestinationHub", fields: [destination_hub_id], references: [id])
+  current_hub_id      String?
+  current_hub         Hub?            @relation("CurrentHub", fields: [current_hub_id], references: [id])
+  sender_info         Json
+  receiver_info       Json
+  status              String          @default("Created")
+  estimated_delivery  DateTime?
+  qr_code             String?
+  created_at          DateTime        @default(now())
+  events              ShipmentEvent[]
+  notifications       Notification[]
+
+  @@unique([tenant_id, tracking_id], name: "idx_shipments_tracking")
+  @@index([tenant_id], name: "idx_shipments_tenant")
+  @@index([assigned_agent_id], name: "idx_shipments_agent")
+  @@index([current_hub_id], name: "idx_shipments_current_hub")
+  @@index([tenant_id, status], name: "idx_shipments_tenant_status")
+  @@index([tracking_id], name: "idx_shipments_tracking_lookup")
+  @@index([tenant_id, created_at], name: "idx_shipments_tenant_created")
+  @@index([tenant_id, assigned_agent_id, created_at], name: "idx_shipments_tenant_agent_created")
+  @@index([tenant_id, origin_hub_id, status, created_at], name: "idx_shipments_origin_hub_status")
+  @@index([tenant_id, destination_hub_id, status, created_at], name: "idx_shipments_dest_hub_status")
+  @@map("shipments")
+}
+
+model ShipmentEvent {
+  id              String   @id @default(uuid())
+  tenant_id       String
+  tenant          Tenant   @relation(fields: [tenant_id], references: [id])
+  shipment_id     String
+  shipment        Shipment @relation(fields: [shipment_id], references: [id])
+  updated_by      String
+  updater         User     @relation(fields: [updated_by], references: [id])
+  status          String
+  location        String?
+  note            String?
+  proof_image_url String?
+  created_at      DateTime @default(now())
+
+  @@index([tenant_id], name: "idx_events_tenant")
+  @@index([shipment_id, created_at], name: "idx_events_shipment_time")
+  @@map("shipment_events")
+}
+
+model Notification {
+  id            String   @id @default(uuid())
+  tenant_id     String
+  tenant        Tenant   @relation(fields: [tenant_id], references: [id])
+  user_id       String?
+  user          User?    @relation(fields: [user_id], references: [id])
+  shipment_id   String?
+  shipment      Shipment? @relation(fields: [shipment_id], references: [id])
+  type          String   @default("email") // email, sms, push
+  title         String
+  message       String
+  tracking_link String?
+  sent_at       DateTime @default(now())
+  read_at       DateTime?
+  created_at    DateTime @default(now())
+
+  @@index([tenant_id], name: "idx_notifications_tenant")
+  @@index([user_id], name: "idx_notifications_user")
+  @@index([shipment_id], name: "idx_notifications_shipment")
+  @@index([tenant_id, created_at], name: "idx_notifications_tenant_time")
+  @@map("notifications")
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  action         String   // e.g., 'user.login', 'shipment.create'
+  resource       String   // e.g., 'user', 'shipment', 'api'
+  resourceId     String?  // ID of affected resource
+  userId         String?  // User who performed action
+  tenantId       String?  // Tenant context
+  changes        Json?    // What changed (for updates)
+  status         String   @default("success") // success, failed, warning
+  ipAddress      String?  // Source IP
+  userAgent      String?  // Browser/client info
+  details        Json?    // Additional context
+  timestamp      DateTime @default(now())
+  created_at     DateTime @default(now())
+
+  @@index([action], name: "idx_audit_action")
+  @@index([userId], name: "idx_audit_user")
+  @@index([tenantId], name: "idx_audit_tenant")
+  @@index([resourceId], name: "idx_audit_resource")
+  @@index([timestamp], name: "idx_audit_time")
+  @@index([tenantId, timestamp], name: "idx_audit_tenant_time")
+  @@index([userId, timestamp], name: "idx_audit_user_time")
+  @@map("audit_logs")
+}
+
