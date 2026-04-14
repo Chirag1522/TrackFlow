@@ -18,7 +18,7 @@ A full-featured SaaS platform for courier companies to manage shipments, and for
 
 ### 1. Clone and install
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/Chirag1522/TrackFlow.git
 cd courier-saas
 npm install
 ```
@@ -80,7 +80,6 @@ cd apps/web && npm run dev
 
 | Role        | Email                      | Password       |
 |-------------|---------------------------|----------------|
-| Super Admin | superadmin@courier.com    | superadmin123  |
 | Admin       | admin@democourier.com     | admin123       |
 | Agent       | agent@democourier.com     | agent123       |
 
@@ -112,8 +111,8 @@ cd apps/web && npm run dev
 2. Copy connection string to `DATABASE_URL`
 3. Run `npx prisma migrate deploy`
 
-### Backend — Railway
-1. Connect GitHub repo to Railway
+### Backend — Render
+1. Connect GitHub repo to Render
 2. Set root directory: `apps/api`
 3. Add all env vars from above
 4. Set start command: `npm start`
@@ -122,8 +121,12 @@ cd apps/web && npm run dev
 ### Frontend — Vercel
 1. Connect GitHub repo to Vercel
 2. Set root directory: `apps/web`
-3. Set `VITE_API_URL` to your Railway backend URL
+3. Set `VITE_API_URL` to `https://trackflow-lxk9.onrender.com/api`
 4. Deploy
+
+### Live Deployment
+- Frontend: https://track-flow-web.vercel.app/
+- Backend API: https://trackflow-lxk9.onrender.com
 
 ---
 
@@ -162,12 +165,12 @@ Postman collection: `docs/postman/CourierSaaS.postman_collection.json`
 
 ## Submission Checklist
 
-- Git repository link: `<add-your-repo-link>`
+- Git repository link: `https://github.com/Chirag1522/TrackFlow`
 - Setup instructions: included in this `README.md`
 - Architecture overview: `ARCHITECTURE.md`
 - API documentation (Postman): `docs/postman/CourierSaaS.postman_collection.json`
 - Advanced enhancements implemented:
 	- QR code generation and scanning
 	- Mobile-first PWA delivery agent interface
-- Deployed frontend link: `<add-your-frontend-link>`
-- Deployed backend/API link: `<add-your-backend-link>`
+- Deployed frontend link: `https://track-flow-web.vercel.app/`
+- Deployed backend/API link: `https://trackflow-lxk9.onrender.com`
