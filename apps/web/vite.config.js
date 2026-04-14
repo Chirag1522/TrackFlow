@@ -12,7 +12,14 @@ export default defineConfig({
         type: 'module',
         navigateFallback: 'index.html',
       },
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
+      includeAssets: [
+        'favicon.ico',
+        'apple-touch-icon.png',
+        'pwa-192x192.png',
+        'pwa-512x512.png',
+        'pwa-192x192-maskable.png',
+        'pwa-512x512-maskable.png'
+      ],
       manifest: {
         name: 'TrackFlow - Courier Tracking Platform',
         short_name: 'TrackFlow',
@@ -25,10 +32,10 @@ export default defineConfig({
         start_url: '/',
         prefer_related_applications: false,
         icons: [
-          { src: '/pwa-192x192.svg', sizes: '192x192', type: 'image/svg+xml', purpose: 'any' },
-          { src: '/pwa-512x512.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'any' },
-          { src: '/pwa-192x192.svg', sizes: '192x192', type: 'image/svg+xml', purpose: 'maskable' },
-          { src: '/pwa-512x512.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' }
+          { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/pwa-192x192-maskable.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: '/pwa-512x512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
         ]
       },
       workbox: {
