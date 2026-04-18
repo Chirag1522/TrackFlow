@@ -12,6 +12,22 @@ const toFiniteNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+const getGpsHistoryForShipment = async (shipment) => {
+  // Some deployments don't have the optional GpsTracking Prisma model yet.
+  if (!prisma.gpsTracking || typeof prisma.gpsTracking.findMany !== 'function') {
+    return [];
+  }
+
+  return prisma.gpsTracking.findMany({
+    where: {
+      shipment_id: shipment.id,
+      tenant_id: shipment.tenant_id,
+    },
+    orderBy: { created_at: 'asc' },
+    take: 120,
+  });
+};
+
 const getUniqueShipmentByTrackingId = async (tracking_id, include = {}) => {
   const shipments = await prisma.shipment.findMany({
     where: { tracking_id },
@@ -38,14 +54,7 @@ const trackByTrackingId = async (tracking_id) => {
     events: { orderBy: { created_at: 'asc' } },
   });
 
-  const gpsHistory = await prisma.gpsTracking.findMany({
-    where: {
-      shipment_id: shipment.id,
-      tenant_id: shipment.tenant_id,
-    },
-    orderBy: { created_at: 'asc' },
-    take: 120,
-  });
+  const gpsHistory = await getGpsHistoryForShipment(shipment);
 
   const latestGps = gpsHistory.length > 0 ? gpsHistory[gpsHistory.length - 1] : null;
 

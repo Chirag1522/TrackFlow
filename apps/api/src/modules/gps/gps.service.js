@@ -1,5 +1,15 @@
 const prisma = require('../../config/db');
 
+const getGpsTrackingDelegate = () => {
+  if (!prisma.gpsTracking) {
+    const error = new Error('GPS tracking is not configured on this deployment');
+    error.statusCode = 503;
+    throw error;
+  }
+
+  return prisma.gpsTracking;
+};
+
 /**
  * Calculate distance between two coordinates using Haversine formula
  * @param {number} lat1
@@ -27,7 +37,8 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
  */
 const recordGpsLocation = async (shipmentId, tenantId, agentId, latitude, longitude, additionalData = {}) => {
   try {
-    const gpsRecord = await prisma.gpsTracking.create({
+    const gpsTracking = getGpsTrackingDelegate();
+    const gpsRecord = await gpsTracking.create({
       data: {
         shipment_id: shipmentId,
         tenant_id: tenantId,
@@ -51,7 +62,8 @@ const recordGpsLocation = async (shipmentId, tenantId, agentId, latitude, longit
  */
 const getLatestGpsLocation = async (shipmentId, tenantId) => {
   try {
-    const latest = await prisma.gpsTracking.findFirst({
+    const gpsTracking = getGpsTrackingDelegate();
+    const latest = await gpsTracking.findFirst({
       where: {
         shipment_id: shipmentId,
         tenant_id: tenantId,
@@ -72,7 +84,8 @@ const getLatestGpsLocation = async (shipmentId, tenantId) => {
  */
 const getGpsHistory = async (shipmentId, tenantId, limit = 50) => {
   try {
-    const history = await prisma.gpsTracking.findMany({
+    const gpsTracking = getGpsTrackingDelegate();
+    const history = await gpsTracking.findMany({
       where: {
         shipment_id: shipmentId,
         tenant_id: tenantId,
@@ -136,7 +149,8 @@ const getPublicTrackingWithGps = async (trackingId) => {
     }
 
     // Get GPS tracking data
-    const gpsHistory = await prisma.gpsTracking.findMany({
+    const gpsTracking = getGpsTrackingDelegate();
+    const gpsHistory = await gpsTracking.findMany({
       where: { shipment_id: shipment.id },
       orderBy: { created_at: 'desc' },
       take: 50,
